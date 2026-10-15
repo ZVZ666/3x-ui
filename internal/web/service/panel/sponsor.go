@@ -60,8 +60,8 @@ type sponsorLogo struct {
 }
 
 var (
-	sponsorsURL     = "https://example.com"
-	sponsorLogoBase = "https://example.com"
+	sponsorsURL     = ""
+	sponsorLogoBase = ""
 	sponsorNow      = time.Now
 
 	// The panel proxies logos from sponsorLogoBase: CSP stays 'self' and no third party sees admin IPs.

@@ -55,7 +55,9 @@ func applyClientRecordMerge(row *model.ClientRecord, incoming *model.ClientRecor
 		row.AllowedIPs = incoming.AllowedIPs
 	}
 	row.PreSharedKey = incoming.PreSharedKey
-	row.KeepAlive = incoming.KeepAlive
+	if incoming.KeepAlive != "" {
+		row.KeepAlive = incoming.KeepAlive
+	}
 	row.SubID = incoming.SubID
 	row.LimitIP = incoming.LimitIP
 	row.TotalGB = incoming.TotalGB
@@ -208,6 +210,9 @@ func (s *ClientService) syncInboundClients(tx *gorm.DB, inboundId int, clients [
 		if err := tx.CreateInBatches(toCreate, 200).Error; err != nil {
 			return err
 		}
+		// Whichever API re-created the client, a delete tombstone left standing makes
+		// the next node merge prune it and ReapSyncOrphans delete it.
+		liftTombstonesOnCommit(tx, toCreate)
 		disabledIDs := make([]int, 0)
 		for i, rec := range toCreate {
 			idByEmail[rec.Email] = rec.Id

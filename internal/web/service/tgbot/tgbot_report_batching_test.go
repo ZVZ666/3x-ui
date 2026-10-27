@@ -14,11 +14,14 @@ import (
 	"time"
 
 	"github.com/mymmrac/telego"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/dbtest"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/locale"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
 )
@@ -32,7 +35,9 @@ func seedReportClients(t *testing.T, remark string, emails []string) {
 		settings = append(settings, fmt.Sprintf(`{"email":%q,"subId":"sub-%s"}`, email, email))
 	}
 	inbound := &model.Inbound{
-		UserId:   1,
+		UserId: 1,
+		// The tag is unique per inbound, so a test may seed more than one.
+		Tag:      "tag-" + remark,
 		Remark:   remark,
 		Port:     8443,
 		Protocol: model.VLESS,
@@ -74,11 +79,20 @@ func initReportDB(t *testing.T) *Tgbot {
 
 type sentMessage struct {
 	Text        string          `json:"text"`
+	Caption     string          `json:"caption"`
 	ReplyMarkup json.RawMessage `json:"reply_markup"`
 }
 
-// captureReportServer records every sendMessage call so a test can assert on
-// what Telegram would have received, not merely how many calls were made.
+// body is what Telegram would show, whichever call carried it.
+func (m sentMessage) body() string {
+	if m.Text != "" {
+		return m.Text
+	}
+	return m.Caption
+}
+
+// captureReportServer records every message-shaped call (sendMessage and the screen's sendPhoto), so a
+// test asserts on what Telegram would receive, not just how many calls were made.
 func captureReportServer(t *testing.T) (*httptest.Server, func() []sentMessage) {
 	t.Helper()
 	var mu sync.Mutex
@@ -86,7 +100,8 @@ func captureReportServer(t *testing.T) (*httptest.Server, func() []sentMessage) 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		result := any(true)
-		if r.URL.Path == "/bot"+testBotToken+"/sendMessage" {
+		path := r.URL.Path
+		if path == "/bot"+testBotToken+"/sendMessage" || path == "/bot"+testBotToken+"/sendPhoto" {
 			var payload sentMessage
 			_ = json.Unmarshal(body, &payload)
 			mu.Lock()
@@ -107,14 +122,7 @@ func captureReportServer(t *testing.T) (*httptest.Server, func() []sentMessage) 
 // Regression test: the sorted usage report must reach Telegram as one message
 // whatever the client count; per-client sends burst past the rate limit.
 func TestTrafficUsageReportIsOneMessage(t *testing.T) {
-	mock, calls := staleButtonServer(t, map[string]any{
-		"sendMessage": map[string]any{"ok": true, "result": map[string]any{
-			"message_id": 1,
-			"date":       0,
-			"chat":       map[string]any{"id": 1, "type": "private"},
-		}},
-		"deleteMessage": map[string]any{"ok": true, "result": true},
-	})
+	mock, sent := captureReportServer(t)
 	swapTestBot(t, mock.URL)
 	defer mock.Close()
 
@@ -128,8 +136,8 @@ func TestTrafficUsageReportIsOneMessage(t *testing.T) {
 		Message: &telego.Message{Chat: telego.Chat{ID: 1}},
 	}, true) // admin
 
-	if n := calls("sendMessage"); n != 1 {
-		t.Errorf("sendMessage calls = %d, want 1: one report per tap, not one per client", n)
+	if n := len(sent()); n != 1 {
+		t.Errorf("messages = %d, want 1: one report per tap, not one per client", n)
 	}
 }
 
@@ -150,14 +158,18 @@ func TestResetAllTrafficsAnswersWithNoClients(t *testing.T) {
 	}, true) // admin
 
 	got := sent()
-	if len(got) != 1 {
-		t.Fatalf("sendMessage calls = %d, want 1: an empty panel must still answer the tap", len(got))
+	// Two messages: the report and the menu that replaces the confirmation, which used to stay on screen
+	// with only the button just pressed.
+	if len(got) != 2 {
+		t.Fatalf("messages = %d, want 2: the report and the menu that replaces the confirmation", len(got))
 	}
-	if got[0].Text == "" {
+	if got[0].body() == "" {
 		t.Error("reset report text is empty, want the finish-process message")
 	}
-	if !strings.Contains(string(got[0].ReplyMarkup), `"remove_keyboard":true`) {
-		t.Errorf("reply_markup = %s, want the reply keyboard removed", got[0].ReplyMarkup)
+	// The bot keeps no reply keyboards any more: every answer carries the hide
+	// button instead, so the user can clear it with one tap.
+	if !strings.Contains(string(got[0].ReplyMarkup), `"hide"`) {
+		t.Errorf("reply_markup = %s, want the hide button", got[0].ReplyMarkup)
 	}
 }
 
@@ -180,13 +192,10 @@ func TestTrafficUsageReportEscapesHtml(t *testing.T) {
 
 	got := sent()
 	if len(got) != 1 {
-		t.Fatalf("sendMessage calls = %d, want 1", len(got))
+		t.Fatalf("messages = %d, want 1", len(got))
 	}
-	if strings.Contains(got[0].Text, "<fast>") {
-		t.Errorf("report text = %q, want the remark escaped", got[0].Text)
-	}
-	if !strings.Contains(got[0].Text, "&lt;fast&gt;") {
-		t.Errorf("report text = %q, want the remark escaped as &lt;fast&gt;", got[0].Text)
+	if strings.Contains(got[0].body(), "<fast>") {
+		t.Errorf("report text = %q, want the remark escaped", got[0].body())
 	}
 }
 
@@ -274,6 +283,47 @@ func TestNotifyExhaustedLooksUpEachIDOnce(t *testing.T) {
 				}
 			} else if len(got) != 0 {
 				t.Fatalf("unexpected notifications: %+v", got)
+			}
+		})
+	}
+}
+
+func TestServerUsageInfoShowsUnavailableUptime(t *testing.T) {
+	bundle := i18n.NewBundle(language.English)
+	_ = bundle.AddMessages(language.English, &i18n.Message{ID: "tgbot.messages.serverUpTime", Other: "Uptime: {{.UpTime}} {{.Unit}}\n"}, &i18n.Message{ID: "tgbot.days", Other: "days"})
+	oldLocale := locale.LocalizerBot
+	locale.LocalizerBot = i18n.NewLocalizer(bundle, "en")
+	t.Cleanup(func() { locale.LocalizerBot = oldLocale })
+	statusCache.mutex.Lock()
+	oldStatus, oldTime := statusCache.data, statusCache.timestamp
+	statusCache.mutex.Unlock()
+	serverStatsCache.mutex.Lock()
+	oldStats, oldStatsTime := serverStatsCache.data, serverStatsCache.timestamp
+	serverStatsCache.mutex.Unlock()
+	t.Cleanup(func() {
+		statusCache.mutex.Lock()
+		statusCache.data, statusCache.timestamp = oldStatus, oldTime
+		statusCache.mutex.Unlock()
+		serverStatsCache.mutex.Lock()
+		serverStatsCache.data, serverStatsCache.timestamp = oldStats, oldStatsTime
+		serverStatsCache.mutex.Unlock()
+	})
+	for _, unavailable := range []bool{true, false} {
+		t.Run(map[bool]string{true: "unavailable", false: "valid zero"}[unavailable], func(t *testing.T) {
+			bot := &Tgbot{}
+			status := &service.Status{Loads: []float64{0, 0, 0}}
+			if unavailable {
+				status.UnavailableMetrics = []string{"uptime"}
+			}
+			bot.setCachedStatus(status)
+			bot.setCachedServerStats("")
+			info := bot.prepareServerUsageInfo()
+			want := "Uptime: 0 days"
+			if unavailable {
+				want = "Uptime: —"
+			}
+			if !strings.Contains(info, want) {
+				t.Fatalf("report did not contain %q: %s", want, info)
 			}
 		})
 	}

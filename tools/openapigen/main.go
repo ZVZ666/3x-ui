@@ -121,8 +121,17 @@ func run(root, outDir string) error {
 			StructAllow: setOf("ApiTokenView", "PanelUpdateStatus", "Sponsor", "SponsorList"),
 		},
 		{
+			Path:        resolveRel(root, "internal/web/controller"),
+			StructAllow: setOf("TgBotCapabilities"),
+		},
+		{
 			Path:        resolveRel(root, "internal/amneziawg"),
 			StructAllow: setOf("ServerSettings"),
+		},
+		{
+			Path:        resolveRel(root, "internal/amneziawgkern"),
+			StructAllow: setOf("Readiness", "Blocker"),
+			AliasAllow:  setOf("BlockerCode"),
 		},
 		{
 			Path:        resolveRel(root, "internal/tuic"),

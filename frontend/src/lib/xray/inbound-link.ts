@@ -15,6 +15,7 @@ import type { FinalMaskStreamSettings } from '@/schemas/protocols/stream/finalma
 import type { XHttpStreamSettings } from '@/schemas/protocols/stream/xhttp';
 
 import { parseGeckoPacketSize } from '@/lib/xray/forms/transport/FinalMaskForm';
+import { UTLS_FINGERPRINT } from '@/schemas/primitives';
 import { hasWgQuickHook, joinConfLines } from './conf-lines';
 import { getHeaderValue } from './headers';
 import { canEnableTlsFlow } from './protocol-capabilities';
@@ -215,6 +216,18 @@ function externalProxyPins(value: ExternalProxyEntry['pinnedPeerCertSha256']): s
   return '';
 }
 
+// Xray drops cipherSuites under every uTLS fingerprint and reads an empty one as
+// chrome, so a link carrying cs must ask for unsafe; the sub server does the same.
+function pinUnsafeFingerprintForCipherSuites(
+  link: URLSearchParams | Record<string, unknown>,
+): void {
+  if (link instanceof URLSearchParams) {
+    if (link.get('cs') && !link.get('fp')) link.set('fp', UTLS_FINGERPRINT.UTLS_UNSAFE);
+  } else if (link.cs && !link.fp) {
+    link.fp = UTLS_FINGERPRINT.UTLS_UNSAFE;
+  }
+}
+
 function applyExternalProxyTLSObj(
   externalProxy: ExternalProxyEntry | null | undefined,
   obj: Record<string, unknown>,
@@ -235,6 +248,8 @@ function applyExternalProxyTLSObj(
   }
   if (externalProxy.echConfigList && externalProxy.echConfigList.length > 0)
     obj.ech = externalProxy.echConfigList;
+  if (externalProxy.cipherSuites && externalProxy.cipherSuites.length > 0)
+    obj.cs = externalProxy.cipherSuites;
 }
 
 export interface GenVmessLinkInput {
@@ -337,9 +352,13 @@ export function genVmessLink(input: GenVmessLinkInput): string {
     if (tlsSettings.settings.pinnedPeerCertSha256.length > 0) {
       obj.pcs = tlsSettings.settings.pinnedPeerCertSha256.join(',');
     }
+    if (tlsSettings.cipherSuites && tlsSettings.cipherSuites.length > 0) {
+      obj.cs = tlsSettings.cipherSuites;
+    }
   }
 
   applyExternalProxyTLSObj(externalProxy, obj, tls);
+  pinUnsafeFingerprintForCipherSuites(obj);
 
   return 'vmess://' + Base64.encode(JSON.stringify(obj, null, 2));
 }
@@ -394,6 +413,8 @@ function applyExternalProxyTLSParams(
   }
   if (externalProxy.echConfigList && externalProxy.echConfigList.length > 0)
     params.set('ech', externalProxy.echConfigList);
+  if (externalProxy.cipherSuites && externalProxy.cipherSuites.length > 0)
+    params.set('cs', externalProxy.cipherSuites);
 }
 
 export interface GenVlessLinkInput {
@@ -497,6 +518,9 @@ export function genVlessLink(input: GenVlessLinkInput): string {
       if (tls.settings.pinnedPeerCertSha256.length > 0) {
         params.set('pcs', tls.settings.pinnedPeerCertSha256.join(','));
       }
+      if (tls.cipherSuites && tls.cipherSuites.length > 0) {
+        params.set('cs', tls.cipherSuites);
+      }
     }
     applyExternalProxyTLSParams(externalProxy, params, security);
   } else if (security === 'reality') {
@@ -535,6 +559,7 @@ export function genVlessLink(input: GenVlessLinkInput): string {
     params.set('flow', flow);
   }
 
+  pinUnsafeFingerprintForCipherSuites(params);
   const url = new URL(
     `vless://${applyVlessRoute(clientId, externalProxy?.vlessRoute)}@${formatUrlHost(address)}:${port}`,
   );
@@ -601,6 +626,9 @@ function writeTlsParams(
   }
   if (tls.settings.pinnedPeerCertSha256.length > 0) {
     params.set('pcs', tls.settings.pinnedPeerCertSha256.join(','));
+  }
+  if (tls.cipherSuites && tls.cipherSuites.length > 0) {
+    params.set('cs', tls.cipherSuites);
   }
 }
 
@@ -675,6 +703,7 @@ export function genTrojanLink(input: GenTrojanLinkInput): string {
     params.set('security', 'none');
   }
 
+  pinUnsafeFingerprintForCipherSuites(params);
   const url = new URL(
     `trojan://${encodeURIComponent(clientPassword)}@${formatUrlHost(address)}:${port}`,
   );
@@ -736,6 +765,7 @@ export function genShadowsocksLink(input: GenShadowsocksLinkInput): string {
     params.set('plugin', `obfs-local;obfs=http;obfs-host=${host}`);
   }
 
+  pinUnsafeFingerprintForCipherSuites(params);
   const isSS2022 = settings.method.substring(0, 4) === '2022';
   const passwords: string[] = [];
   if (isSS2022) passwords.push(settings.password);

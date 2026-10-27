@@ -85,7 +85,6 @@
     "uploaded": "Отправлено",
     "expiry": "Срок действия",
     "totalQuota": "Общий лимит",
-    "individualLinks": "Индивидуальные ссылки",
     "active": "Активна",
     "inactive": "Неактивна",
     "unlimited": "Неограниченно",
@@ -655,6 +654,8 @@
         "addCustomOption": "Добавить опцию",
         "serverNameIndication": "SNI",
         "cipherSuites": "Наборы шифров",
+        "cipherSuitesNeedUnsafe": "Клиенты применяют эти наборы шифров только с отпечатком uTLS «unsafe»; при любом другом отпечатке они игнорируются.",
+        "presets": "Пресеты",
         "autoOption": "Авто",
         "minMaxVersion": "Мин/Макс версия",
         "rejectUnknownSni": "Отклонить неизвестный SNI",
@@ -992,6 +993,9 @@
       "mtprotoSecretHint": "Секрет FakeTLS клиента. Перегенерируйте, чтобы сменить.",
       "mtprotoAdTag": "Рекламный тег (спонсорский канал)",
       "mtprotoAdTagHint": "Необязательный шестнадцатеричный тег из 32 символов, получаемый при регистрации прокси в Telegram. Если задан, этот клиент маршрутизируется через промежуточные прокси Telegram, и спонсорский канал появляется вверху списка чатов.",
+      "hostRuleOverride": "Переопределение правила хоста",
+      "hostRuleOverridePlaceholder": "По умолчанию (правило входящего)",
+      "hostRuleDisabled": "{label} (отключено)",
       "reverseTag": "Обратный тег",
       "reverseTagPlaceholder": "Необязательный Reverse tag",
       "telegramId": "ID пользователя Telegram",
@@ -1826,7 +1830,16 @@
       "subIncyResolveDnsDomainDesc": "URL DoH-сервера, обычно заканчивается на /dns-query.",
       "subIncyResolveDnsIp": "IP DoH-сервера",
       "subIncyResolveDnsIpDesc": "IP DoH-сервера, нужен для bootstrap.",
-      "subIncyGroupRouting": "Маршрутизация"
+      "subIncyGroupRouting": "Маршрутизация",
+      "tgInlineMissing": "Inline mode is disabled",
+      "tgInlineMissingDesc": "Lists in the bot open through inline search. Enable it in @BotFather with /setinline, otherwise tapping a search button does nothing.",
+      "tgInlineRecheck": "Check again",
+      "tgPrivacyOn": "Режим приватности включён",
+      "tgPrivacyOnDesc": "Бот работает только в личных сообщениях, поэтому группы он игнорирует намеренно. Приватность в группах решает лишь то, может ли бот читать сообщения группы, — а он это не использует.",
+      "subHostSortMode": "Порядок узлов подписки",
+      "subHostSortInbound": "Порядок входящих подключений (по умолчанию)",
+      "subHostSortHosts": "Порядок хостов",
+      "subHostSortModeDesc": "Используется порядок со страницы хостов для всех входящих подключений. Настройка задаёт порядок выдачи сервером; клиентские приложения могут сортировать узлы самостоятельно."
     },
     "xray": {
       "importRules": "Импорт правил",
@@ -2225,7 +2238,19 @@
         "disableCookiesHint": "Не отправлять cookie reply — убирает сигнатуру для DPI, но ослабляет защиту от флуда.",
         "listenPort": "Listen Port (optional)",
         "listenPortHint": "Fixed local UDP source port. Leave 0 to pick one automatically.",
-        "outboundObfuscationHint": "Must exactly match the server side parameters."
+        "outboundObfuscationHint": "Must exactly match the server side parameters.",
+        "kernelUnavailable": "Этот сервер пока не может работать в режиме ядра",
+        "kernelBlocker": {
+          "root": "Панель запущена не от root, поэтому не может создать сетевой интерфейс",
+          "tools": "Не найдена нужная команда; установите amneziawg-tools и iproute2",
+          "module": "Модуль ядра amneziawg не установлен",
+          "nft": "nftables не установлен; он нужен для правил NAT туннеля",
+          "ipv6": "Выход по IPv6 для отдельных пиров в режиме ядра пока не поддерживается",
+          "portForwarding": "Проброс портов для клиентов в режиме ядра пока не поддерживается",
+          "routeThroughXray": "routeThroughXray не реализован в режиме ядра: у туннеля не останется пути наружу"
+        },
+        "kernelMode": "Режим ядра",
+        "kernelModeHint": "Запускать этот inbound на модуле ядра AmneziaWG вместо встроенного стека в пространстве пользователя. Обычно быстрее, особенно на каналах с большой задержкой, но маршрутизация Xray, sniffing, IPv6 и проброс портов к его пирам не применяются. Требуются модуль ядра AmneziaWG и amneziawg-tools на сервере."
       },
       "tuic": {
         "congestionControl": "Контроль перегрузок",
@@ -2383,6 +2408,7 @@
         "actions": "Действия",
         "security": "Безопасность",
         "sni": "SNI",
+        "sniSharedRandom": "Один случайный SNI для всех конфигураций",
         "overrideSniFromAddress": "Использовать адрес как SNI",
         "keepSniBlank": "Оставить SNI пустым",
         "hostHeader": "Заголовок Host",
@@ -2465,7 +2491,8 @@
         "delete": "Удалить хост",
         "badTag": "Недопустимый тег",
         "badVlessRoute": "Введите одно число от 0 до 65535"
-      }
+      },
+      "dragToReorder": "Перетащите, чтобы изменить порядок {name}"
     },
     "sponsors": {
       "title": "Спонсоры",
@@ -2478,7 +2505,6 @@
     }
   },
   "tgbot": {
-    "keyboardClosed": "❌ Клавиатура закрыта.",
     "noResult": "❗ Нет результатов.",
     "noQuery": "❌ Запрос не найден. Пожалуйста, повторите команду.",
     "wentWrong": "❌ Что-то пошло не так...",
@@ -2500,10 +2526,6 @@
       "unknown": "❗ Неизвестная команда",
       "pleaseChoose": "👇 Пожалуйста, выберите:\r\n",
       "help": "🤖 Добро пожаловать! Этот бот предназначен для предоставления вам данных с сервера и позволяет вносить изменения на него.\r\n\r\n",
-      "start": "👋 Привет, <i>{{ .Firstname }}</i>.\r\n",
-      "welcome": "🤖 Добро пожаловать в бота управления <b>{{ .Hostname }}</b>!\r\n",
-      "status": "✅ Бот функционирует нормально.",
-      "usage": "❗ Пожалуйста, укажите email для поиска.",
       "getID": "🆔 Ваш User ID: <code>{{ .ID }}</code>",
       "helpAdminCommands": "🔃 Для перезапуска Xray Core:\r\n<code>/restart</code>\r\n\r\n🔎 Для поиска клиента по email:\r\n<code>/usage [Email]</code>\r\n\r\n📊 Для поиска входящих подключений (со статистикой клиентов):\r\n<code>/inbound [имя подключения]</code>\r\n\r\n🆔 Ваш Telegram User ID:\r\n<code>/id</code>",
       "helpClientCommands": "💲 Для просмотра информации о вашей подписке используйте команду:\r\n<code>/usage [Email]</code>\r\n\r\n🆔 Ваш Telegram User ID:\r\n<code>/id</code>",
@@ -2512,14 +2534,7 @@
       "restartFailed": "❗ Ошибка при перезапуске Xray-core.\r\n\r\n<code>Ошибка: {{ .Error }}</code>.",
       "xrayNotRunning": "❗ Xray Core не запущен.",
       "startDesc": "Показать главное меню",
-      "helpDesc": "Справка по боту",
-      "statusDesc": "Проверить статус бота",
-      "idDesc": "Показать ваш Telegram ID",
-      "usageDesc": "Показать трафик клиента: /usage email",
-      "inboundDesc": "Поиск входящих: /inbound имя (админ)",
-      "restartDesc": "Перезапустить ядро Xray (админ)",
-      "broadcastDesc": "Массовая рассылка всем клиентам (админ)",
-      "clearallDesc": "Сбросить трафик всех клиентов (админ)"
+      "statusOk": "✅ Бот в порядке!"
     },
     "messages": {
       "cpuThreshold": "Загрузка процессора составляет {{ .Percent }}%, что превышает пороговое значение {{ .Threshold }}%",
@@ -2563,7 +2578,6 @@
       "inviteInvalid": "❗ Эта ссылка-приглашение недействительна или уже использована.\r\n",
       "inviteRateLimited": "⏳ Слишком много попыток приглашения. Попробуйте позже.\r\n",
       "inviteRateLimitedAdmin": "⚠️ Попытки приглашения заблокированы для {{ .User }} (<code>{{ .ID }}</code>): более {{ .Limit }} попыток за час. Возможно, кто-то подбирает ID подписок.",
-      "inviteLink": "🔗 Ссылка-приглашение для <code>{{ .Email }}</code>:\r\n<code>{{ .Link }}</code>\r\n\r\nПервый, кто её откроет, будет привязан к этому клиенту.\r\n",
       "exhaustedCount": "🚨 Количество исчерпанных {{ .Type }}:\r\n",
       "onlinesCount": "🌐 Клиентов онлайн: {{ .Count }}\r\n",
       "disabled": "🛑 Отключено: {{ .Disabled }}\r\n",
@@ -2572,13 +2586,11 @@
       "refreshedOn": "\r\n📋🔄 Обновлено: {{ .Time }}\r\n\r\n",
       "yes": "✅ Да",
       "no": "❌ Нет",
-      "received_email": "📧📥 Email обновлен.",
-      "received_comment": "💬📥 Комментарий обновлён.",
       "email_prompt": "📧 Стандартный email: {{ .ClientEmail }}\n\nВведите ваш email.",
       "comment_prompt": "💬 Стандартный комментарий: {{ .ClientComment }}\n\nВведите ваш комментарий.",
+      "tgid_prompt": "🆔 Стандартный TG-юзер: {{ .ClientTGID }}\n\nОтправьте числовой id пользователя, чтобы привязать к клиенту, либо - / none чтобы очистить.",
       "cancel": "❌ Процесс отменён! \n\nВы можете снова начать с /start в любое время. 🔄",
       "error_add_client": "⚠️ Ошибка:\n\n {{ .error }}",
-      "using_default_value": "Используется значение по умолчанию👌",
       "incorrect_input": "Ваш ввод недействителен.\nФразы должны быть непрерывными без пробелов.\nПравильный пример: aaaaaa\nНеправильный пример: aaa aaa 🚫",
       "broadcastAskText": "📤 Рассылка: пришлите сообщение для ваших клиентов — текст, фото, видео, файл или целый альбом.",
       "broadcastAlreadyRunning": "❗ Рассылка уже идёт, дождитесь её завершения.",
@@ -2602,7 +2614,23 @@
       "eventNodeDown": "Узел {{ .Name }} НЕДОСТУПЕН",
       "eventNodeUp": "Узел {{ .Name }} В СЕТИ",
       "eventLoginFallback": "Неудачный вход с {{ .Source }}",
-      "memoryThreshold": "🔴 Использование памяти {{ .Percent }}% превышает пороговое значение {{ .Threshold }}%"
+      "memoryThreshold": "🔴 Использование памяти {{ .Percent }}% превышает пороговое значение {{ .Threshold }}%",
+      "inboundsCount": "🔌 Inbounds: {{ .Count }}\r\n",
+      "clientsCount": "👥 Clients: {{ .Count }}\r\n",
+      "category_server": "🖥 Сервер",
+      "category_clients": "👥 Клиенты",
+      "category_traffic": "🚦 Трафик",
+      "category_maintenance": "⚙️ Обслуживание",
+      "inlineHint": "\r\n🔍 The list opens through search: tap Find and start typing.",
+      "subURL": "🔗 Subscription: <code>{{ .URL }}</code>\r\n",
+      "jsonURL": "🧩 JSON: <code>{{ .URL }}</code>\r\n",
+      "inviteHint": "Send this link to the client: the first Telegram account to open it is bound to the client.",
+      "qrLegendHeader": "🔳 QR-коды:",
+      "qrLegendSubscription": "{{ .Code }}. Подписка",
+      "qrLegendJSON": "{{ .Code }}. JSON-подписка",
+      "qrLegendLink": "{{ .Code }}. Ссылка для приложения {{ .App }}",
+      "backupFailed": "Не удалось прочитать базу данных; бэкап не отправлен.",
+      "privateOnly": "🤖 Бот работает только в личных сообщениях. Открой его в личке."
     },
     "buttons": {
       "closeKeyboard": "❌ Закрыть клавиатуру",
@@ -2618,9 +2646,11 @@
       "serverUsage": "💻 Состояние сервера",
       "getInbounds": "🔌 Входящие подключения",
       "depleteSoon": "⚠️ Скоро конец",
-      "clientUsage": "Статистика клиента",
       "onlines": "🟢 Онлайн",
-      "commands": "🖱️ Команды",
+      "catServer": "🖥 Сервер",
+      "catClients": "👥 Клиенты",
+      "catTraffic": "🚦 Трафик",
+      "catMaintenance": "⚙️ Обслуживание",
       "refresh": "🔄 Обновить",
       "clearIPs": "❌ Очистить IP",
       "removeTGUser": "❌ Удалить пользователя Telegram",
@@ -2645,8 +2675,22 @@
       "use_default": "🏷️ Использовать по умолчанию",
       "change_email": "⚙️📧 Email",
       "change_comment": "⚙️💬 Комментарий",
-      "ResetAllTraffics": "Сбросить весь трафик",
-      "SortedTrafficUsageReport": "Отсортированный отчет об использовании трафика"
+      "ResetAllTraffics": "♻️ Сбросить весь трафик",
+      "SortedTrafficUsageReport": "📈 Отсортированный отчет об использовании трафика",
+      "restartXray": "♻️ Restart Xray",
+      "back": "⬅️ Back",
+      "hide": "🙈 Hide",
+      "page": "Page {{ .Page }} of {{ .Pages }}",
+      "searchInbounds": "🔍 Find inbound…",
+      "searchClients": "🔍 Find client…",
+      "inlineDisabled": "⚠️ Inline mode is off",
+      "clientCard": "⬅️ Client card",
+      "links": "🔗 Links",
+      "individualLinks": "🔗 Individual links",
+      "qrCode": "🔳 QR code",
+      "broadcast": "📢 Рассылка",
+      "attachInbound": "Привязать инбаунд ({{ .Count }})",
+      "attachDone": "✅ Готово"
     },
     "answers": {
       "broadcastStarted": "🚀 Рассылка запущена.",
@@ -2674,6 +2718,36 @@
       "chooseClient": "Выберите клиента для входящего подключения {{ .Inbound }}",
       "chooseInbound": "Выберите входящее подключение",
       "qrCodeForClient": "QR-код для клиента {{ .Email }}:"
+    },
+    "screens": {
+      "panel": "Panel",
+      "main": "Main",
+      "status": "Server",
+      "inbounds": "Inbounds",
+      "clients": "Clients",
+      "client": "Client",
+      "links": "Links",
+      "qr": "QR code",
+      "wizard": "New client",
+      "reports": "Report",
+      "backup": "Backup",
+      "onlines": "Online",
+      "deplete": "Running out",
+      "commands": "Commands",
+      "broadcast": "Broadcast"
+    },
+    "inline": {
+      "noneTitle": "Nothing found",
+      "noneDesc": "Use @BotFather /setinline to enable the list.",
+      "offTitle": "⚠️ Inline mode is disabled for this bot",
+      "offBody": "Lists are browsed in inline mode. Enable it in @BotFather: /setinline, then tap Check again.",
+      "recheck": "Check again",
+      "expired": "истёк",
+      "fromFirstUse": "с первого использования"
+    },
+    "noValue": "—",
+    "notices": {
+      "repeat": "\r\n\r\n🔁 repeated {{ .Count }}× · last {{ .Time }}"
     }
   },
   "discord": {
